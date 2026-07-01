@@ -22,3 +22,10 @@ climalert:
   scheduler:
     obtener-clima: "*/15 * * * * *"
     analizar-alertas: "*/10 * * * * *"
+
+mailtrap:
+  base-url: https://send.api.mailtrap.io
+  token: ${MAILTRAP_TOKEN:}
+  from-email: hello@demomailtrap.co
+  from-name: Climalert
+  category: Climalert Alert

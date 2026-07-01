@@ -16,10 +16,12 @@ public class ClimaService {
 
     private final MedicionClimaRepository medicionClimaRepository;
     private final AlertaClimaticaRepository alertaClimaticaRepository;
+    private final NotificadorEmailService notificadorEmailService;
 
-    public ClimaService(MedicionClimaRepository medicionClimaRepository, AlertaClimaticaRepository alertaClimaticaRepository) {
+    public ClimaService(MedicionClimaRepository medicionClimaRepository, AlertaClimaticaRepository alertaClimaticaRepository, NotificadorEmailService notificadorEmailService) {
         this.medicionClimaRepository = medicionClimaRepository;
         this.alertaClimaticaRepository = alertaClimaticaRepository;
+        this.notificadorEmailService = notificadorEmailService;
     }
 
     public void obtenerClimaActual() {
@@ -93,6 +95,8 @@ public class ClimaService {
         alerta.setFechaGeneracion(LocalDateTime.now());
 
         alertaClimaticaRepository.save(alerta);
+
+        notificadorEmailService.enviarAlerta(mensaje); //Envio mail
 
         log.warn("ALERTA CLIMÁTICA GENERADA para la medición id={}", medicion.getId());
     }
