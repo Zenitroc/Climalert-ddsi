@@ -1,3 +1,8 @@
 spring:
   application:
     name: climalert
+
+climalert:
+  scheduler:
+    obtener-clima: "0 */5 * * * *"
+    analizar-alertas: "0 * * * * *"
