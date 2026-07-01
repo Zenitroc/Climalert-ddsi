@@ -10,6 +10,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Slf4j
@@ -31,19 +32,18 @@ public class NotificadorEmailService {
     @Value("${mailtrap.category}")
     private String category;
 
+    @Value("${mailtrap.to-emails}")
+    private String toEmails;
+
     public void enviarAlerta(String mensaje) {
         if (!StringUtils.hasText(token)) {
-            log.warn("No se envió el mail porque MAILTRAP_TOKEN no está configurado en variable de entorno");
+            log.warn("No se envió el mail porque MAILTRAP_TOKEN no está configurado");
             return;
         }
 
         MailtrapEmailRequest request = new MailtrapEmailRequest(
                 new MailtrapAddress(fromEmail, fromName),
-                List.of(
-                        new MailtrapAddress("admin@clima.com", "Administración"),
-                        new MailtrapAddress("emergencias@clima.com", "Emergencias"),
-                        new MailtrapAddress("meteorologia@clima.com", "Meteorología")
-                ),
+                obtenerDestinatarios(),
                 "Alerta climática - Climalert",
                 mensaje,
                 category
@@ -59,15 +59,25 @@ public class NotificadorEmailService {
                     .toBodilessEntity();
 
             log.info("Correo de alerta enviado correctamente mediante Mailtrap API");
+
         } catch (RestClientResponseException e) {
             log.error(
                     "Error enviando mail por Mailtrap. Status: {}. Body: {}",
                     e.getStatusCode(),
                     e.getResponseBodyAsString()
             );
+
         } catch (Exception e) {
             log.error("Error inesperado enviando mail por Mailtrap", e);
         }
+    }
+
+    private List<MailtrapAddress> obtenerDestinatarios() {
+        return Arrays.stream(toEmails.split(","))
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .map(email -> new MailtrapAddress(email, email))
+                .toList();
     }
 
     private record MailtrapEmailRequest(

@@ -23,9 +23,15 @@ public class MedicionClima {
     private Double temperaturaC;
     private Integer humedad;
     private String condicion;
+    private Double vientoKph;
+    private Double presionMb;
+    private String fechaMedicionProveedor;
     private LocalDateTime fechaRegistro;
 
     public boolean alerta() {
-        return temperaturaC > 35 && humedad > 60;
+        return temperaturaC != null
+                && humedad != null
+                && temperaturaC > 35
+                && humedad > 60;
     }
 }

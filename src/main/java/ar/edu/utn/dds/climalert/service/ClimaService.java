@@ -2,44 +2,48 @@ package ar.edu.utn.dds.climalert.service;
 
 import ar.edu.utn.dds.climalert.domain.AlertaClimatica;
 import ar.edu.utn.dds.climalert.domain.MedicionClima;
+import ar.edu.utn.dds.climalert.integration.WeatherApiClient;
+import ar.edu.utn.dds.climalert.integration.dto.WeatherApiResponse;
 import ar.edu.utn.dds.climalert.repository.AlertaClimaticaRepository;
 import ar.edu.utn.dds.climalert.repository.MedicionClimaRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Random;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class ClimaService {
 
     private final MedicionClimaRepository medicionClimaRepository;
     private final AlertaClimaticaRepository alertaClimaticaRepository;
     private final NotificadorEmailService notificadorEmailService;
-
-    public ClimaService(MedicionClimaRepository medicionClimaRepository, AlertaClimaticaRepository alertaClimaticaRepository, NotificadorEmailService notificadorEmailService) {
-        this.medicionClimaRepository = medicionClimaRepository;
-        this.alertaClimaticaRepository = alertaClimaticaRepository;
-        this.notificadorEmailService = notificadorEmailService;
-    }
+    private final WeatherApiClient weatherApiClient;
 
     public void obtenerClimaActual() {
+        WeatherApiResponse response = weatherApiClient.obtenerClimaActual();
+
         MedicionClima medicion = new MedicionClima();
 
-        medicion.setUbicacion("CABA");
-        medicion.setTemperaturaC(temperaturaMock()); //PARA TESTEAR Q FUNQUE
-        medicion.setHumedad(humedadMock()); //PARA TESTEAR Q FUNQUE
-        medicion.setCondicion("Simulado");
+        medicion.setUbicacion(obtenerUbicacion(response));
+        medicion.setTemperaturaC(response.current().tempC());
+        medicion.setHumedad(response.current().humidity());
+        medicion.setCondicion(response.current().condition().text());
+        medicion.setVientoKph(response.current().windKph());
+        medicion.setPresionMb(response.current().pressureMb());
+        medicion.setFechaMedicionProveedor(response.current().lastUpdated());
         medicion.setFechaRegistro(LocalDateTime.now());
 
         medicionClimaRepository.save(medicion);
 
         log.info(
-                "Medición guardada: ubicación={}, temperatura={}°C, humedad={}%",
+                "Medición guardada desde WeatherAPI: ubicación={}, temperatura={}°C, humedad={}%, condición={}",
                 medicion.getUbicacion(),
                 medicion.getTemperaturaC(),
-                medicion.getHumedad()
+                medicion.getHumedad(),
+                medicion.getCondicion()
         );
     }
 
@@ -74,18 +78,24 @@ public class ClimaService {
 
     private void generarAlerta(MedicionClima medicion) {
         String mensaje = """
-                Alerta climática detectada!
+                Alerta climática detectada.
 
                 Ubicación: %s
                 Temperatura: %.2f °C
                 Humedad: %d %%
                 Condición: %s
-                Fecha de registro: %s
+                Viento: %.2f kph
+                Presión: %.2f mb
+                Fecha proveedor: %s
+                Fecha de registro local: %s
                 """.formatted(
                 medicion.getUbicacion(),
                 medicion.getTemperaturaC(),
                 medicion.getHumedad(),
                 medicion.getCondicion(),
+                medicion.getVientoKph(),
+                medicion.getPresionMb(),
+                medicion.getFechaMedicionProveedor(),
                 medicion.getFechaRegistro()
         );
 
@@ -96,16 +106,16 @@ public class ClimaService {
 
         alertaClimaticaRepository.save(alerta);
 
-        notificadorEmailService.enviarAlerta(mensaje); //Envio mail
+        notificadorEmailService.enviarAlerta(mensaje);
 
         log.warn("ALERTA CLIMÁTICA GENERADA para la medición id={}", medicion.getId());
     }
 
-    private Double temperaturaMock() {
-        return 25 + new Random().nextDouble(15);
-    }
-
-    private Integer humedadMock() {
-        return 40 + new Random().nextInt(40);
+    private String obtenerUbicacion(WeatherApiResponse response) {
+        return "%s, %s, %s".formatted(
+                response.location().name(),
+                response.location().region(),
+                response.location().country()
+        );
     }
 }

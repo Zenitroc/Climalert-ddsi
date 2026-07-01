@@ -1,3 +1,6 @@
+server:
+  port: 8081
+
 spring:
   application:
     name: climalert
@@ -20,12 +23,18 @@ spring:
 
 climalert:
   scheduler:
-    obtener-clima: "*/15 * * * * *"
-    analizar-alertas: "*/10 * * * * *"
+    obtener-clima: "0 */5 * * * *"
+    analizar-alertas: "0 * * * * *"
+
+  weather:
+    base-url: https://api.weatherapi.com/v1
+    api-key: ${WEATHER_API_KEY:}
+    location: "-34.6037,-58.3816"
 
 mailtrap:
   base-url: https://send.api.mailtrap.io
   token: ${MAILTRAP_TOKEN:}
-  from-email: hello@demomailtrap.co
+  from-email: ${MAILTRAP_FROM_EMAIL:hello@demomailtrap.co}
   from-name: Climalert
   category: Climalert Alert
+  to-emails: ${MAILTRAP_TO_EMAILS:admin@clima.com,emergencias@clima.com,meteorologia@clima.com}
