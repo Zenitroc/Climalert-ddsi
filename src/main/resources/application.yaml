@@ -2,7 +2,23 @@ spring:
   application:
     name: climalert
 
+  datasource:
+    url: jdbc:h2:mem:climalert-db
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
 climalert:
   scheduler:
-    obtener-clima: "0 */5 * * * *"
-    analizar-alertas: "0 * * * * *"
+    obtener-clima: "*/15 * * * * *"
+    analizar-alertas: "*/10 * * * * *"
